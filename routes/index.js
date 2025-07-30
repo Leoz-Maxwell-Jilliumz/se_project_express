@@ -8,8 +8,8 @@ const clothingRouter = require("./clothingItems");
 router.use("/users", userRouter);
 router.use("/items", clothingRouter);
 
-router.use((req, res) => {
-  return res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
-});
+router.use((req, res) =>
+  res.status(NOT_FOUND_ERROR).send({ message: "Not Found" })
+);
 
 module.exports = router;
