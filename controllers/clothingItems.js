@@ -7,7 +7,7 @@ const {
 
 const getItem = (req, res) => {
   Item.find({})
-    .then((items) => res.status(200).send(items))
+    .then((items) => res.send(items))
     .catch((err) => {
       console.error(err);
       return res
@@ -18,6 +18,7 @@ const getItem = (req, res) => {
 
 const createItem = (req, res) => {
   const { name, weather, imageUrl } = req.body;
+
   const owner = req.user._id;
   Item.create({ name, weather, imageUrl, owner })
     .then((item) => res.status(201).send({ data: item }))
@@ -39,19 +40,19 @@ const deleteItem = (req, res) => {
 
   Item.findByIdAndDelete(itemId)
     .orFail()
-    .then((item) => res.status(200).send({ data: item }))
+    .then((item) => res.send({ data: item }))
     .catch((err) => {
-      console.error(err);
       if (err.name === "DocumentNotFoundError") {
-        return res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
+        res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
       } else if (err.name === "CastError") {
-        return res
+        res
           .status(BAD_REQUEST_STATUS_CODE)
-          .send({ message: "Data Invalid" });
+          .send({ message: "Data Is Invalid" });
+      } else {
+        res
+          .status(INTERNAL_SERVER_ERROR)
+          .send({ message: "An Error Has Occured On The Server" });
       }
-      res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "An Error Has Occured On The Server" });
     });
 };
 
@@ -62,14 +63,17 @@ const likeItem = (req, res) => {
     { new: true }
   )
     .orFail()
-    .then((item) => {
-      return res.status(200).send(item);
-    })
+    .then((item) => res.send(item))
     .catch((err) => {
       console.error(err);
-      return res
+      if (err.name === "CastError") {
+        res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
+      } else if (err.name === "DocumentNotFoundError") {
+        res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
+      }
+      res
         .status(INTERNAL_SERVER_ERROR)
-        .send({ messgae: "An Error Has Occured On The Server" });
+        .send({ message: "An Error Has Occured On The Server" });
     });
 };
 
@@ -79,12 +83,14 @@ const unlikeItem = (req, res) => {
     { $pull: { likes: req.user._id } },
     { new: true }
   )
-    .then((item) => {
-      return res.status(200).send(item);
-    })
+    .orFail()
+    .then((item) => res.send(item))
     .catch((err) => {
       console.error(err);
-      return res
+      if (err.name === "CastError") {
+        res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
+      }
+      res
         .status(INTERNAL_SERVER_ERROR)
         .send({ message: "An Error Has Occured On The Server" });
     });
@@ -92,7 +98,6 @@ const unlikeItem = (req, res) => {
 module.exports = {
   getItem,
   createItem,
-
   deleteItem,
   likeItem,
   unlikeItem,

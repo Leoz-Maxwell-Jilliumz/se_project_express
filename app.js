@@ -10,6 +10,12 @@ mongoose
   })
   .catch(console.error);
 const { PORT = 3001 } = process.env;
+app.use((req, res, next) => {
+  req.user = {
+    _id: "6885549de4c5564ab654e15b",
+  };
+  next();
+});
 
 app.use(express.json());
 app.use("/", indexRouter);
