@@ -30,7 +30,7 @@ const createItem = (req, res) => {
           .send({ message: "Data Is Invalid" });
       }
       return res
-        .status(500)
+        .status(INTERNAL_SERVER_ERROR)
         .send({ message: "An Error Has Occured On The Server" });
     });
 };
@@ -67,13 +67,14 @@ const likeItem = (req, res) => {
     .catch((err) => {
       console.error(err);
       if (err.name === "CastError") {
-        res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
+        res.status(BAD_REQUEST_STATUS_CODE).send({ message: "Data Invalid" });
       } else if (err.name === "DocumentNotFoundError") {
         res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
+      } else {
+        res
+          .status(INTERNAL_SERVER_ERROR)
+          .send({ message: "An Error Has Occured On The Server" });
       }
-      res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "An Error Has Occured On The Server" });
     });
 };
 
@@ -88,11 +89,14 @@ const unlikeItem = (req, res) => {
     .catch((err) => {
       console.error(err);
       if (err.name === "CastError") {
+        res.status(BAD_REQUEST_STATUS_CODE).send({ message: "Not Found" });
+      } else if (err.name === "DocumentNotFoundError") {
         res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
+      } else {
+        res
+          .status(INTERNAL_SERVER_ERROR)
+          .send({ message: "An Error Has Occured On The Server" });
       }
-      res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "An Error Has Occured On The Server" });
     });
 };
 module.exports = {
