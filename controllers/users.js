@@ -49,10 +49,11 @@ const getUser = (req, res) => {
         res
           .status(BAD_REQUEST_STATUS_CODE)
           .send({ message: "Data is Invalid" });
+      } else {
+        res
+          .status(INTERNAL_SERVER_ERROR)
+          .send({ message: "An Error Has Occured On The Server" });
       }
-      res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "An Error Has Occured On The Server" });
     });
 };
 
