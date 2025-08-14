@@ -1,5 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 const indexRouter = require("./routes/index");
 
 const app = express();
@@ -10,14 +11,10 @@ mongoose
   })
   .catch(console.error);
 const { PORT = 3001 } = process.env;
-app.use((req, res, next) => {
-  req.user = {
-    _id: "6885549de4c5564ab654e15b",
-  };
-  next();
-});
+app.use(cors());
 
 app.use(express.json());
+
 app.use("/", indexRouter);
 
 app.listen(PORT, () => {

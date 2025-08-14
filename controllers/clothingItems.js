@@ -3,6 +3,7 @@ const {
   BAD_REQUEST_STATUS_CODE,
   INTERNAL_SERVER_ERROR,
   NOT_FOUND_ERROR,
+  NOT_CORRECT_USER_CODE,
 } = require("../utils/errors");
 
 const getItem = (req, res) => {
@@ -38,9 +39,30 @@ const createItem = (req, res) => {
 const deleteItem = (req, res) => {
   const { itemId } = req.params;
 
-  Item.findByIdAndDelete(itemId)
+  Item.findById(itemId)
     .orFail()
-    .then((item) => res.send({ data: item }))
+    .then((item) => {
+      if (item.owner.toString() !== req.user._id.toString()) {
+        return res
+          .status(NOT_CORRECT_USER_CODE)
+          .send({ message: "You are not authorized to delete this item" });
+      }
+      return Item.findByIdAndDelete(itemId)
+        .then((deletedItem) => res.send({ data: deletedItem }))
+        .catch((err) => {
+          if (err.name === "DocumentNotFoundError") {
+            res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
+          } else if (err.name === "CastError") {
+            res
+              .status(BAD_REQUEST_STATUS_CODE)
+              .send({ message: "Data Is Invalid" });
+          } else {
+            res
+              .status(INTERNAL_SERVER_ERROR)
+              .send({ message: "An Error Has Occured On The Server" });
+          }
+        });
+    })
     .catch((err) => {
       if (err.name === "DocumentNotFoundError") {
         res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
@@ -55,7 +77,6 @@ const deleteItem = (req, res) => {
       }
     });
 };
-
 const likeItem = (req, res) => {
   Item.findByIdAndUpdate(
     req.params.itemId,
