@@ -26,7 +26,11 @@ app.use(requestLogger);
 app.use(errorLogger);
 const { PORT = 3001 } = process.env;
 app.use(cors());
-
+app.get("/crash-test", () => {
+  setTimeout(() => {
+    throw new Error("Server will crash now");
+  }, 0);
+});
 app.use(express.json());
 
 app.use("/", indexRouter);
