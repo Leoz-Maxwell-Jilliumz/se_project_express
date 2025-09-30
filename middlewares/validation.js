@@ -1,6 +1,13 @@
 const { Joi, celebrate } = require("celebrate");
 const validator = require("validator");
 
+const validateURL = (value, helpers) => {
+  if (validator.isURL(value)) {
+    return value;
+  }
+  return helpers.error("string.uri");
+};
+
 // 1. Clothing item creation validation
 const validateItemCreation = celebrate({
   body: Joi.object().keys({
@@ -103,12 +110,13 @@ const validateHeaders = celebrate({
     .unknown(true),
 });
 
-const validateURL = (value, helpers) => {
-  if (validator.isURL(value)) {
-    return value;
-  }
-  return helpers.error("string.uri");
-};
+// User profile update validation
+const validateUserUpdate = celebrate({
+  body: Joi.object().keys({
+    name: Joi.string().min(2).max(30),
+    avatar: Joi.string().custom(validateURL),
+  }),
+});
 
 module.exports = {
   validateItemCreation,
@@ -120,4 +128,5 @@ module.exports = {
   validateItemIdParam,
   validateQuery,
   validateHeaders,
+  validateUserUpdate,
 };

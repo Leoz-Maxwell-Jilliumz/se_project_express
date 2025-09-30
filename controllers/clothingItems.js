@@ -1,19 +1,21 @@
 const Item = require("../models/clothingItems");
 const {
   BadRequestError,
-  UnauthorizedError,
+} = require("../middlewares/customErrors/BadRequestError");
+const {
+  InternalServerError,
+} = require("../middlewares/customErrors/InternalServerError");
+const { NotFoundError } = require("../middlewares/customErrors/NotFoundError");
+const {
   ForbiddenError,
-  NotFoundError,
-  ConflictError,
-} = require("../middlewares/customErrors");
-const getItem = (req, res) => {
+} = require("../middlewares/customErrors/ForbiddenError");
+
+const getItem = (req, res, next) => {
   Item.find({})
     .then((items) => res.send(items))
     .catch((err) => {
       console.error(err);
-      return res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "An Error Has Occured On The Server" });
+      next(new InternalServerError("An Error Has Occured On The Server"));
     });
 };
 
@@ -47,23 +49,13 @@ const deleteItem = (req, res, next) => {
           "You do not have permission to delete this item"
         );
       }
-      return Item.findByIdAndDelete(itemId)
-        .then((deletedItem) => {
-          if (!deletedItem) {
-            throw new NotFoundError("Item Not Found");
-          }
+      return Item.findByIdAndDelete(itemId).then((deletedItem) => {
+        if (!deletedItem) {
+          throw new NotFoundError("Item Not Found");
+        }
 
-          res.send({ data: deletedItem });
-        })
-        .catch((err) => {
-          if (err.name === "DocumentNotFoundError") {
-            next(new NotFoundError("Item Not Found"));
-          } else if (err.name === "CastError") {
-            next(new BadRequestError("Data Is Invalid"));
-          } else {
-            next(new InternalServerError("An Error Has Occured On The Server"));
-          }
-        });
+        res.send({ data: deletedItem });
+      });
     })
     .catch((err) => {
       if (err.name === "DocumentNotFoundError") {
@@ -100,7 +92,7 @@ const likeItem = (req, res, next) => {
     });
 };
 
-const unlikeItem = (req, res) => {
+const unlikeItem = (req, res, next) => {
   Item.findByIdAndUpdate(
     req.params.itemId,
     { $pull: { likes: req.user._id } },
@@ -111,13 +103,11 @@ const unlikeItem = (req, res) => {
     .catch((err) => {
       console.error(err);
       if (err.name === "CastError") {
-        res.status(BAD_REQUEST_STATUS_CODE).send({ message: "Not Found" });
+        next(new BadRequestError("Data Is Invalid"));
       } else if (err.name === "DocumentNotFoundError") {
-        res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
+        next(new NotFoundError("Item Not Found"));
       } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({ message: "An Error Has Occured On The Server" });
+        next(new InternalServerError("An Error Has Occured On The Server"));
       }
     });
 };

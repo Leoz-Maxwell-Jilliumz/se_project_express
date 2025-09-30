@@ -2,14 +2,17 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const {
-  BAD_REQUEST_STATUS_CODE,
-  INTERNAL_SERVER_ERROR,
-  NOT_FOUND_ERROR,
-  CONFLICT_ERROR,
-} = require("../utils/errors");
+  InternalServerError,
+} = require("../middlewares/customErrors/InternalServerError");
+const { ConflictError } = require("../middlewares/customErrors/ConflictError");
+const { NotFoundError } = require("../middlewares/customErrors/NotFoundError");
+const {
+  BadRequestError,
+} = require("../middlewares/customErrors/BadRequestError");
+
 const { JWT_SECRET } = require("../utils/config");
 
-const postUser = (req, res) => {
+const postUser = (req, res, next) => {
   const { name, avatar, email } = req.body;
   bcrypt
     .hash(req.body.password, 10)
@@ -23,22 +26,18 @@ const postUser = (req, res) => {
       console.error(err);
 
       if (err.name === "ValidationError") {
-        return res
-          .status(BAD_REQUEST_STATUS_CODE)
-          .send({ message: "Data Is Invalid" });
+        next(new BadRequestError("Data is Invalid"));
       }
       if (err.code === 11000) {
-        return res
-          .status(CONFLICT_ERROR)
-          .send({ message: "This email already exists" });
+        return next(new ConflictError("This email already exists"));
       }
-      return res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "An Error Has Occured On The Server" });
+      return next(
+        new InternalServerError("An Error Has Occured On The Server")
+      );
     });
 };
 
-const getCurrentUser = (req, res) => {
+const getCurrentUser = (req, res, next) => {
   const userId = req.user;
 
   User.findById(userId)
@@ -47,49 +46,39 @@ const getCurrentUser = (req, res) => {
     .catch((err) => {
       console.error(err);
       if (err.name === "DocumentNotFoundError") {
-        return res.status(NOT_FOUND_ERROR).send({ message: "Not Found" });
+        return next(new NotFoundError("Not Found"));
       }
       if (err.name === "CastError") {
-        return res
-          .status(BAD_REQUEST_STATUS_CODE)
-          .send({ message: "Data is Invalid" });
+        return next(new BadRequestError("Data is Invalid"));
       }
-      return res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "An Error Has Occured On The Server" });
+      return next(
+        new InternalServerError("An Error Has Occured On The Server")
+      );
     });
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return res
-      .status(BAD_REQUEST_STATUS_CODE)
-      .send({ message: "Email and password are required" });
+    return next(new BadRequestError("Email and password are required"));
   }
   try {
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      return res
-        .status(BAD_REQUEST_STATUS_CODE)
-        .send({ message: "Incorrect email or password" });
+      return next(new BadRequestError("Incorrect email or password"));
     }
     const matched = await bcrypt.compare(password, user.password);
     if (!matched) {
-      return res
-        .status(BAD_REQUEST_STATUS_CODE)
-        .send({ message: "Incorrect email or password" });
+      return next(new BadRequestError("Incorrect email or password"));
     }
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: "7d" });
     return res.send({ token });
   } catch (err) {
     console.error(err);
-    return res
-      .status(INTERNAL_SERVER_ERROR)
-      .send({ message: "An Error Has Occured On The Server" });
+    return next(new InternalServerError("An Error Has Occured On The Server"));
   }
 };
-const updateUser = (req, res) => {
+const updateUser = (req, res, next) => {
   User.findByIdAndUpdate(
     req.user._id,
     { name: req.body.name, avatar: req.body.avatar },
@@ -99,16 +88,14 @@ const updateUser = (req, res) => {
     .catch((err) => {
       console.error(err);
       if (err.name === "DocumentNotFoundError") {
-        return res.status(NOT_FOUND_ERROR).send({ message: "Not found" });
+        return next(new NotFoundError("Not found"));
       }
       if (err.name === "ValidationError") {
-        return res
-          .status(BAD_REQUEST_STATUS_CODE)
-          .send({ message: "Data Is Invalid" });
+        return next(new BadRequestError("Data is Invalid"));
       }
-      return res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "An error has occurred on the server" });
+      return next(
+        new InternalServerError("An error has occurred on the server")
+      );
     });
 };
 module.exports = { postUser, getCurrentUser, login, updateUser };
