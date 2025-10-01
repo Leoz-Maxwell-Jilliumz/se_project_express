@@ -34,6 +34,8 @@ const createItem = (req, res, next) => {
       console.error(err);
       if (err.name === "ValidationError") {
         next(new BadRequestError("Data Is Invalid"));
+      } else {
+        next(new InternalServerError("An Error Has Occured On The Server"));
       }
     });
 };

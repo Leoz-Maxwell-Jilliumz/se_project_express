@@ -34,6 +34,6 @@ app.use("/", indexRouter);
 app.use(errors());
 
 app.use(errorHandler);
+app.use(errorLogger);
 
 app.listen(PORT, () => {});
-app.use(errorLogger);
